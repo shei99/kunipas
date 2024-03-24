@@ -1,0 +1,58 @@
+version: '3'
+
+services:
+  woodpecker-server:
+    image: woodpeckerci/woodpecker-server:latest
+    environment:
+      - WOODPECKER_OPEN=true
+      - WOODPECKER_HOST=http://woodpecker.localhost
+      - WOODPECKER_AGENT_SECRET=super-safe-secret
+      # Gitea
+      - WOODPECKER_GITEA=true
+      - WOODPECKER_GITEA_URL=http://gitea.localhost
+      - WOODPECKER_GITEA_CLIENT=<gitea-oauth2-client-id>
+      - WOODPECKER_GITEA_SECRET=<gitea-oauth2-client-secret>
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.woodpecker.rule=Host(`woodpecker.localhost`)"
+      - "traefik.http.routers.woodpecker.entrypoints=web"
+      - "traefik.http.routers.woodpecker.service=woodpecker"
+      - "traefik.http.services.woodpecker.loadbalancer.server.port=8000"
+    ports:
+      - 8000:8000
+    networks:
+      - proxy 
+      - woodpecker
+    extra_hosts:
+      - "gitea.localhost:192.168.0.4"
+    volumes:
+      - woodpecker-server-data:/var/lib/woodpecker/
+
+  woodpecker-agent:
+    image: woodpeckerci/woodpecker-agent:latest
+    depends_on:
+      - woodpecker-server
+    environment:
+      - WOODPECKER_SERVER=woodpecker-server:9000
+      - WOODPECKER_AGENT_SECRET=super-safe-secret
+      - WOODPECKER_BACKEND_DOCKER_NETWORK=gitea
+    networks:
+      - gitea
+      - woodpecker
+    volumes:
+      - woodpecker-agent-config:/etc/woodpecker
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: agent
+
+volumes:
+  woodpecker-server-data:
+  woodpecker-agent-config:
+
+networks:
+  gitea:
+    external: true
+  proxy:
+    external: true
+  woodpecker:
+    external: true

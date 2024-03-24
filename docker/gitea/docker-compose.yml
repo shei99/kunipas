@@ -1,0 +1,69 @@
+version: "3"
+
+services:
+  server:
+    image: gitea/gitea:1.21.4
+    container_name: gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=db:5432
+      - GITEA__database__NAME=gitea
+      - GITEA__database__USER=gitea
+      - GITEA__database__PASSWD=gitea
+      - GITEA__service__ROOT_URL=http://gitea.localhost
+      - GITEA__openid__ENABLE_OPENID_SIGNIN=false
+      - GITEA__openid__ENABLE_OPENID_SIGNUP=true
+      - GITEA__openid__WHITELISTED_URIS=keycloak.localhost 
+      - GITEA__service__DISABLE_REGISTRATION=false
+      - GITEA__service__ALLOW_ONLY_EXTERNAL_REGISTRATION=true
+      - GITEA__service__SHOW_REGISTRATION_BUTTON=false
+      - GITEA__security__INSTALL_LOCK=true
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.gitea.rule=Host(`gitea.localhost`)"
+      - "traefik.http.routers.gitea.entrypoints=web"
+      - "traefik.http.routers.gitea.service=gitea"
+      - "traefik.http.services.gitea.loadbalancer.server.port=3000"
+    networks:
+      - gitea
+      - proxy
+    extra_hosts:
+      - "keycloak.localhost:192.168.0.4"
+      # - "drone.localhost:192.168.0.4"
+      - "woodpecker.localhost:192.168.0.4"
+    volumes:
+      - gitea:/data
+      - ./app.ini:/data/gitea/conf/app.ini
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "3000:3000"
+      # - "222:22"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:14
+    container_name: gitea-db
+    restart: always
+    environment:
+      - POSTGRES_USER=gitea
+      - POSTGRES_PASSWORD=gitea
+      - POSTGRES_DB=gitea
+    networks:
+      - gitea
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+volumes:
+  gitea:
+  postgres:
+
+networks:
+  gitea:
+    external: true
+  proxy:
+    external: true
