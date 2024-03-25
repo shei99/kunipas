@@ -1,0 +1,43 @@
+api:
+  insecure: true
+  dashboard: true
+  debug: true
+entryPoints:
+  http:
+    address: ":{{ traefik_port_http }}"
+    http:
+      redirections:
+        entryPoint:
+          to: https
+          scheme: https
+  https:
+    address: ":{{ traefik_port_https}}"
+    http:
+      tls:
+        certResolver: "{{ traefik_dns_provider }}"
+        domains:
+          main: "{{ ansible_nas_domain }}"
+          sans: 
+            - "*.{{ ansible_nas_domain }}"
+  traefik:
+    address: ":{{ traefik_port_ui}}"
+serversTransport:
+  insecureSkipVerify: true
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+  # file:
+  #   filename: /config.yml
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: "{{ ansible_nas_email }}"
+      storage: "/letsencrypt/acme.json"
+      caserver: "{{ traefik_acme_server }}"
+      dnsChallenge:
+        provider: "{{ traefik_dns_provider }}"
+        #disablePropagationCheck: true # uncomment this if you have issues pulling certificates through cloudflare, By setting this flag to true disables the need to wait for the propagation of the TXT record to all authoritative name servers.
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
