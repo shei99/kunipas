@@ -1,0 +1,112 @@
+---
+- name: Start Gitea
+  when: gitea_enabled is true
+  block:
+    - name: Create Gitea Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "{{ gitea_data_directory }}"
+        - "{{ gitea_database_data_directory }}"
+
+    - name: Gitea Database Docker Container
+      community.docker.docker_container:
+        name: "{{ gitea_database_container_name }}"
+        hostname: "{{ gitea_database_container_name }}"
+        image: "{{ gitea_database_image_name }}:{{ gitea_database_image_version }}"
+        # restart: "{{ restart }}" # Force restart
+        # recreate: "{{ recreate }}" # Force recreate
+        restart_policy: unless-stopped
+        volumes:
+          - "{{ gitea_database_data_directory }}:/var/lib/postgresql/data"
+        env:
+          POSTGRES_USER: "{{ gitea_database_environment_user }}"
+          POSTGRES_PASSWORD: "{{ gitea_database_environment_password }}"
+          POSTGRES_DB: "{{ gitea_database_environment_db }}"
+        networks:
+          - name: "{{ gitea_database_network }}"
+
+    - name: Gitea Docker Container
+      community.docker.docker_container:
+        name: "{{ gitea_container_name }}"
+        image: "{{ gitea_image_name }}:{{ gitea_image_version }}"
+        pull: true
+        networks:
+          - name: proxy
+          - name: "{{ gitea_database_network }}"
+        etc_hosts: >
+          {
+            "{{ keycloak_hostname }}.{{ ansible_nas_domain }}": "192.168.0.2",
+          }
+        labels:
+          traefik.enable: "{{ gitea_available_externally | string }}"
+          traefik.docker.network: "proxy"
+          traefik.http.routers.gitea.rule: "Host(`{{ gitea_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.gitea.entrypoints: "https"
+          traefik.http.routers.gitea.tls.certresolver: "cloudflare"
+          traefik.http.routers.gitea.tls.domains[0].main: "{{ ansible_nas_domain }}"
+          traefik.http.routers.gitea.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
+          traefik.http.services.gitea.loadbalancer.server.port: "3000"
+          # traefik.http.routers.gitea.middlewares: "gitea-ipwhitelist@docker"
+          # traefik.http.middlewares.gitea-ipwhitelist.ipwhitelist.sourcerange: "{{ gitea_ip_whitelist }}"
+        volumes:
+          - "{{ gitea_data_directory }}/data:/data"
+          - /etc/timezone:/etc/timezone:ro
+          - /etc/localtime:/etc/localtime:ro
+        env:
+          USER_UID: "{{ gitea_environment_user_id }}"
+          USER_GID: "{{ gitea_environment_group_id }}"
+          GITEA__database__DB_TYPE: "{{ gitea_database_environment_type }}"
+          GITEA__database__HOST: "{{ gitea_database_container_name }}:5432"
+          GITEA__database__NAME: "{{ gitea_database_environment_db }}"
+          GITEA__database__USER: "{{ gitea_database_environment_user }}"
+          GITEA__database__PASSWD: "{{ gitea_database_environment_password }}"
+          GITEA__openid__ENABLE_OPENID_SIGNIN: "{{ gitea_environment_openid_enable_openid_signin }}"
+          GITEA__openid__ENABLE_OPENID_SIGNUP: "{{ gitea_environment_openid_enable_openid_signup }}"
+          GITEA__openid__WHITELISTED_URIS: "{{ gitea_environment_openid_whitelisted_uris }}"
+          GITEA__service__ROOT_URL: "{{ gitea_hostname }}.{{ ansible_nas_domain }}"
+          GITEA__service__DISABLE_REGISTRATION: "{{ gitea_environment_service_disable_registration }}"
+          GITEA__service__ALLOW_ONLY_EXTERNAL_REGISTRATION: "{{ gitea_environment_service_allow_only_external_registration }}"
+          GITEA__service__SHOW_REGISTRATION_BUTTON: "{{ gitea_environment_service_show_registration_button }}"
+          GITEA__security__INSTALL_LOCK: "{{ gitea_environment_security_install_lock }}"
+        restart_policy: unless-stopped
+        memory: "{{ gitea_memory }}"
+
+    - name: Configure Login with OIDC
+      vars:
+        gitea_oidc_client_secret: "{{ lookup('ansible.builtin.file', './credentials/oidc_secrets/gitea') }}"
+      community.docker.docker_container_exec:
+        container: gitea
+        user: git
+        argv:
+          - /bin/bash
+          - "-c"
+          - "gitea admin auth add-oauth --name Keycloak --provider openidConnect --key gitea \
+            --secret {{ gitea_oidc_client_secret }} --auto-discover-url https://{{ keycloak_hostname }}.{{ ansible_nas_domain }}/realms/master/.well-known/openid-configuration || \
+            gitea admin auth update-oauth --name Keycloak --provider openidConnect --key gitea --secret {{ gitea_oidc_client_secret }} \
+            --auto-discover-url https://{{ keycloak_hostname }}.{{ ansible_nas_domain }}/realms/master/.well-known/openid-configuration --id `gitea admin auth list | grep -w Keycloak | awk 'NR==1 {print $1}'`"
+
+    - name: Add admin user
+      community.docker.docker_container_exec:
+        container: gitea
+        user: git
+        argv:
+          - /bin/bash
+          - "-c"
+          - "if [ $(gitea admin user list | grep -w kunipas | awk 'END{print NR}') -eq 0 ]; \
+            then gitea admin user create --username kunipas --password password --email \
+            admin@kunipas.de --admin true --must-change-password false; fi;"
+
+- name: Stop Gitea
+  when: gitea_enabled is false
+  block:
+    - name: Stop Gitea
+      community.docker.docker_container:
+        name: "{{ gitea_container_name }}"
+        state: absent
+
+    - name: Stop Gitea Database
+      community.docker.docker_container:
+        name: "{{ gitea_database_container_name }}"
+        state: absent

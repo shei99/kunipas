@@ -1,0 +1,54 @@
+---
+gitea_available_externally: true
+
+# directories
+gitea_data_directory: "{{ docker_home }}/vsc/gitea"
+
+# network
+gitea_port: "3000"
+gitea_hostname: "gitea"
+gitea_ip_whitelist: "0.0.0.0/0"
+
+# docker
+gitea_container_name: "gitea"
+gitea_image_name: "gitea/gitea"
+gitea_image_version: "latest"
+gitea_log_level: "INFO"
+
+# environment 
+gitea_environment_user_id: "1000"
+gitea_environment_group_id: "1000"
+gitea_environment_openid_enable_openid_signin: "false"
+gitea_environment_openid_enable_openid_signup: "true"
+gitea_environment_openid_whitelisted_uris: "keycloak.example.com"
+gitea_environment_service_disable_registration: "false"
+gitea_environment_service_allow_only_external_registration: "true"
+gitea_environment_service_show_registration_button: "false"
+gitea_environment_security_install_lock: "true"
+gitea_oauth2_woodpecker_client_id: ""
+gitea_oauth2_woodpecker_client_secret: "" 
+
+# configuration of oidc client in keycloak
+gitea_oidc_client: gitea
+
+# specs
+gitea_memory: 1g
+
+# database docker
+gitea_database_container_name: "gitea-db"
+gitea_database_image_name: "postgres"
+gitea_database_image_version: "14"
+
+gitea_database_data_directory: "{{ docker_home }}/vsc/postgres"
+
+# database network
+gitea_database_network: "gitea-db"
+
+# database environment
+gitea_database_environment_type: postgres
+gitea_database_environment_user: gitea
+gitea_database_environment_password: gitea
+gitea_database_environment_db: gitea
+
+# database specs
+gitea_database_memory: 1g
