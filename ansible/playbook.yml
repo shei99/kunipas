@@ -1,0 +1,20 @@
+---
+- name: Ansible-Kunipas
+  hosts: all
+
+  roles:
+    - role: traefik
+      tags:
+        - traefik
+    - role: keycloak/docker_installation
+      tags:
+        - keycloak 
+    - role: keycloak/client_management
+      tags:
+        - keycloak-client-management 
+    - role: gitea
+      tags:
+        - gitea
+    - role: woodpecker-ci
+      tags:
+        - woodpecker-ci

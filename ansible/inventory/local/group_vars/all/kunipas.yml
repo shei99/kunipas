@@ -1,0 +1,10 @@
+ansible_nas_domain: example.com
+ansible_nas_email: foo@example.com
+
+docker_home: /home/shei/tmp/kunipas
+
+## Enable some applications
+gitea_enabled: true
+traefik_enabled: true
+keycloak_enabled: true
+woodpecker_enabled: true
