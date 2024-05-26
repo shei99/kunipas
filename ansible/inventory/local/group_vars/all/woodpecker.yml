@@ -1,0 +1,4 @@
+woodpecker_available_externally: true
+woodpecker_hostname: woodpecker
+
+woodpecker_oidc_client: woodpecker

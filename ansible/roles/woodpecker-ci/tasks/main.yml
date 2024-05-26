@@ -1,0 +1,104 @@
+---
+- name: Start Woodpecker
+  when: woodpecker_enabled is true
+  block:
+    - name: Create Woodpecker Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "{{ woodpecker_data_directory }}"
+        - "{{ woodpecker_agent_data_directory }}"
+
+    - name: Woodpecker Agent Docker Container
+      community.docker.docker_container:
+        name: "{{ woodpecker_agent_container_name }}"
+        hostname: "{{ woodpecker_agent_container_name }}"
+        image: "{{ woodpecker_agent_image_name }}:{{ woodpecker_agent_image_version }}"
+        pull: true
+        # restart: "{{ restart }}" # Force restart
+        # recreate: "{{ recreate }}" # Force recreate
+        restart_policy: unless-stopped
+        volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+          - "{{ woodpecker_agent_data_directory }}:/etc/woodpecker/"
+        env:
+          WOODPECKER_SERVER: "{{ woodpecker_hostname }}-grpc.{{ ansible_nas_domain }}:443"
+          WOODPECKER_AGENT_SECRET: "{{ woodpecker_agent_secret }}"
+          WOODPECKER_GRPC_SECURE: "true"
+          WOODPECKER_GRPC_VERIFY: "true"
+          WOODPECKER_BACKEND: "docker"
+          WOODPECKER_LOG_LEVEL: trace
+        networks:
+          - name: proxy
+        ports:
+          - 4000:3000
+        etc_hosts: >
+          {
+            "{{ woodpecker_hostname }}-grpc.{{ ansible_nas_domain }}": "192.168.0.2",
+          }
+        command: agent
+
+    - name: Woodpecker Server Docker Container
+      community.docker.docker_container:
+        name: "{{ woodpecker_container_name }}"
+        image: "{{ woodpecker_image_name }}:{{ woodpecker_image_version }}"
+        pull: true
+        networks:
+          - name: proxy
+          - name: "{{ woodpecker_network }}"
+        etc_hosts: >
+          {
+            "{{ gitea_hostname }}.{{ ansible_nas_domain }}": "192.168.0.2",
+            "{{ keycloak_hostname }}.{{ ansible_nas_domain }}": "192.168.0.2",
+          }
+        labels:
+          traefik.enable: "{{ woodpecker_available_externally | string }}"
+          traefik.docker.network: "proxy"
+          traefik.http.routers.woodpecker.rule: "Host(`{{ woodpecker_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.woodpecker.entrypoints: "https"
+          traefik.http.routers.woodpecker.tls.certresolver: "cloudflare"
+          traefik.http.routers.woodpecker.tls.domains[0].main: "{{ ansible_nas_domain }}"
+          traefik.http.routers.woodpecker.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
+          traefik.http.routers.woodpecker.service: woodpecker
+          traefik.http.services.woodpecker.loadbalancer.server.port: "8000"
+          # traefik.http.routers.woodpecker.middlewares: "woodpecker-ipwhitelist@docker"
+          # traefik.http.middlewares.woodpecker-ipwhitelist.ipwhitelist.sourcerange: "{{ woodpecker_ip_whitelist }" 
+          # grpc
+          traefik.http.routers.woodpecker-grpc.rule: "Host(`{{ woodpecker_hostname }}-grpc.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.woodpecker-grpc.entrypoints: "https"
+          traefik.http.routers.woodpecker-grpc.tls.certresolver: "cloudflare"
+          traefik.http.routers.woodpecker-grpc.tls.domains[0].main: "{{ ansible_nas_domain }}"
+          traefik.http.routers.woodpecker-grpc.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
+          traefik.http.routers.woodpecker-grpc.service: woodpecker-grpc
+          traefik.http.services.woodpecker-grpc.loadbalancer.server.port: "9000"
+          traefik.http.services.woodpecker-grpc.loadbalancer.server.scheme: h2c
+          # traefik.http.routers.woodpecker.middlewares: "woodpecker-ipwhitelist@docker"
+          # traefik.http.middlewares.woodpecker-ipwhitelist.ipwhitelist.sourcerange: "{{ woodpecker_ip_whitelist }}"
+        volumes:
+          - "{{ woodpecker_data_directory }}:/var/lib/woodpecker/"
+        env:
+          WOODPECKER_OPEN: "true"
+          WOODPECKER_ADMIN: "{{ woodpecker_admin_user }}"
+          WOODPECKER_HOST: "https://{{ woodpecker_hostname }}.{{ ansible_nas_domain }}"
+          WOODPECKER_AGENT_SECRET: "{{ woodpecker_agent_secret }}"
+          # Gitea
+          WOODPECKER_GITEA: "true"
+          WOODPECKER_GITEA_URL: "https://{{ gitea_hostname }}.{{ ansible_nas_domain }}"
+          WOODPECKER_GITEA_CLIENT: "{{ gitea_oauth2_woodpecker_client_id }}"
+          WOODPECKER_GITEA_SECRET: "{{ gitea_oauth2_woodpecker_client_secret }}"
+        restart_policy: unless-stopped
+        memory: "{{ woodpecker_memory }}"
+
+- name: Stop Woodpecker
+  when: woodpecker_enabled is false
+  block:
+    - name: Stop Woodpecker
+      community.docker.docker_container:
+        name: "{{ woodpecker_container_name }}"
+        state: absent
+
+    - name: Stop Woodpecker Agent
+      community.docker.docker_container:
+        name: "{{ woodpecker_agent_container_name }}"
+        state: absent

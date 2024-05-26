@@ -1,0 +1,39 @@
+---
+woodpecker_enabled: false
+woodpecker_available_externally: false
+
+# directories
+woodpecker_data_directory: "{{ docker_home }}/woodpecker/server"
+
+# network
+woodpecker_port: "8000"
+woodpecker_hostname: "woodpecker"
+woodpecker_ip_whitelist: "0.0.0.0/0"
+woodpecker_network: "woodpecker"
+
+# docker
+woodpecker_container_name: "woodpecker-server"
+woodpecker_image_name: "woodpeckerci/woodpecker-server"
+woodpecker_image_version: "latest"
+woodpecker_log_level: "INFO"
+
+# environment
+woodpecker_admin_user: kunipas
+woodpecker_oidc_client: woodpecker
+woodpecker_oidc_client_secret: super-safe-secret
+
+# specs
+woodpecker_memory: 1g
+
+# agent docker
+woodpecker_agent_container_name: "woodpecker-agent"
+woodpecker_agent_image_name: "woodpeckerci/woodpecker-agent"
+woodpecker_agent_image_version: "latest"
+
+woodpecker_agent_data_directory: "{{ docker_home }}/woodpecker/agent"
+
+# agent environment
+woodpecker_agent_secret: super-safe-secret
+
+# agent specs
+woodpecker_agent_memory: 1g
