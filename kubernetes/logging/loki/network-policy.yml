@@ -1,0 +1,152 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: loki-allow-gateway-component
+  namespace: logging
+spec:
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchExpressions:
+        - key: kunipas-ns
+          operator: In
+          values:
+          - grafana
+      podSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+          - grafana
+    ports:
+    - port: http
+      protocol: TCP
+    - port: oauth
+      protocol: TCP
+  podSelector:
+    matchExpressions:
+    - key: app.kubernetes.io/component
+      operator: In
+      values:
+      - gateway
+    matchLabels:
+      app.kubernetes.io/instance: loki
+      app.kubernetes.io/name: loki
+  policyTypes:
+  - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: loki-allow-write-component
+  namespace: logging
+spec:
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchExpressions:
+        - key: kunipas-ns
+          operator: In
+          values:
+          - promtail
+      podSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+          - promtail
+    ports:
+    - port: http-metrics
+      protocol: TCP
+  podSelector:
+    matchExpressions:
+    - key: app.kubernetes.io/component
+      operator: In
+      values:
+      - write
+    matchLabels:
+      app.kubernetes.io/instance: loki
+      app.kubernetes.io/name: loki
+  policyTypes:
+  - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: loki-deny-read-component
+  namespace: logging
+spec:
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchExpressions:
+        - key: kunipas-ns
+          operator: In
+          values:
+          - logging
+    ports:
+    - port: http-metrics
+      protocol: TCP
+  podSelector:
+    matchExpressions:
+    - key: app.kubernetes.io/component
+      operator: In
+      values:
+      - read
+    matchLabels:
+      app.kubernetes.io/instance: loki
+      app.kubernetes.io/name: loki
+  policyTypes:
+  - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: loki-namspace
+  namespace: logging
+spec:
+  policyTypes:
+    - Ingress
+    - Egress
+  podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}
+  ingress:
+    - from:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: loki-dns
+  namespace: logging
+spec:
+  policyTypes:
+    - Egress
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: loki
+      app.kubernetes.io/name: loki
+  egress:
+    - ports:
+        - port: dns
+          protocol: UDP
+      to:
+        - namespaceSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: loki-external-storage
+  namespace: logging
+spec:
+  policyTypes:
+    - Egress
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: loki
+      app.kubernetes.io/name: loki
+  egress:
+    - ports: 

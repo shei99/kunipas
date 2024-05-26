@@ -1,0 +1,150 @@
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    bucketNames:
+      chunks: chunks
+    type: s3
+    s3:
+      endpoint: minio.s3.svc.cluster.local:80
+      accessKeyId: ${S3_LOKI_ACCESS_KEY_ID}
+      secretAccessKey: ${S3_LOKI_SECRET_ACCESS_KEY}
+      s3ForcePathStyle: true
+      insecure: true
+      
+backend:
+  replicas: 1
+  extraArgs:
+  - '-config.expand-env=true'
+  extraEnv:
+    - name: S3_LOKI_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: vso-loki-bucket-secret
+          key: S3_LOKI_ACCESS_KEY_ID
+    - name: S3_LOKI_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: vso-loki-bucket-secret
+          key: S3_LOKI_SECRET_ACCESS_KEY
+
+write:
+  replicas: 1
+  extraArgs:
+  - '-config.expand-env=true'
+  extraEnv:
+    - name: S3_LOKI_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: vso-loki-bucket-secret
+          key: S3_LOKI_ACCESS_KEY_ID
+    - name: S3_LOKI_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: vso-loki-bucket-secret
+          key: S3_LOKI_SECRET_ACCESS_KEY
+
+read:
+  replicas: 1
+  extraArgs:
+  - '-config.expand-env=true'
+  extraEnv:
+    - name: S3_LOKI_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: vso-loki-bucket-secret
+          key: S3_LOKI_ACCESS_KEY_ID
+    - name: S3_LOKI_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: vso-loki-bucket-secret
+          key: S3_LOKI_SECRET_ACCESS_KEY
+
+gateway:
+  replicas: 1
+  extraContainers:
+    - name: oauth2-proxy
+      image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+      imagePullPolicy: Always
+      ports:
+        - name: http
+          containerPort: 4180
+          protocol: TCP
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 50m
+          memory: 64Mi
+      args:
+        - --alpha-config=/etc/oauth2_proxy/oauth2_proxy.yml
+        - --email-domain=*
+        - --skip-provider-button=true
+        - --skip-jwt-bearer-tokens=true
+      # Read Client and Cookie secret from Kubernetes Secrets
+      env:
+        - name: OAUTH2_PROXY_CLIENT_ID
+          value: oauth2-proxy-loki
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: oauth-loki-secret
+              key: OAUTH_LOKI_CLIENT_SECRET
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: oauth-loki-secret
+              key: OAUTH_LOKI_COOKIE_SECRET
+      volumeMounts:
+        - name: alpha-config
+          mountPath: /etc/oauth2_proxy/oauth2_proxy.yml
+          subPath: oauth2_proxy.yml
+  extraVolumes:
+      - name: alpha-config
+        configMap:
+          name: oauth-loki-alpha-config
+
+monitoring:
+  dashboards:
+    enabled: false
+  rules:
+    enabled: false
+  serviceMonitor:
+    enabled: false
+  lokiCanary:
+    enabled: true
+  selfMonitoring:
+    enabled: true
+    grafanaAgent:
+      installOperator: false
+
+networkPolicy:
+  enabled: false
+  flavor: kubernetes
+  metrics:
+    podSelector:
+       matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values: ["grafana", "promtail"]
+    namespaceSelector: 
+       matchExpressions:
+        - key: kunipas-ns
+          operator: In
+          values: ["grafana", "promtail"]
+    cidrs: 
+      - "10.244.0.0/16"
+  ingress:
+    podSelector:
+       matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values: ["grafana", "promtail"]
+    namespaceSelector: 
+       matchExpressions:
+        - key: kunipas-ns
+          operator: In
+          values: ["grafana", "promtail"]
+

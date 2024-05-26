@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oauth-loki-alpha-config
+  namespace: logging
+data:
+  oauth2_proxy.yml: |
+    server:
+      BindAddress: "0.0.0.0:4180"
+    providers:
+    - id: oidc-prometheus
+      provider: oidc
+      clientID: oauth2-proxy-loki
+      clientSecret: jYXWeL4qbKOMyqhqvoRIg2qVewE0caju
+      loginURL: https://keycloak.example.com/realms/master/protocol/openid-connect/auth
+      redeemURL: https://keycloak.example.com/realms/master/protocol/openid-connect/token
+      profileURL: https://keycloak.example.com/realms/master/protocol/openid-connect/userinfo
+      validateURL: https://keycloak.example.com/realms/master/protocol/openid-connect/userinfo
+      oidcConfig:
+        emailClaim: email
+        audienceClaims: 
+          - aud
+        groupsClaim: groups
+        userIDClaim: email
+        skipDiscovery: true
+        issuerURL: https://keycloak.example.com/realms/master
+        jwksURL: https://keycloak.example.com/realms/master/protocol/openid-connect/certs
+        # insecureAllowUnverifiedEmail: true
+      scope: "openid email profile groups"
+    upstreamConfig:
+      upstreams:
+        - id: loki
+          uri: http://localhost:8080
+          path: /
+    injectRequestHeaders:
+      - name: X-Scope-OrgID
+        values:
+          - claim: groups
+

@@ -1,0 +1,13 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: kunipas-loki
+  namespace: logging
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: kunipas-loki
+    serviceAccount: vso-kunipas-loki
+    audiences:
+      - vault

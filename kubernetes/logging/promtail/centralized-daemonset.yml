@@ -1,0 +1,94 @@
+config:
+  clients:
+    - url: http://loki-write.logging:3100/loki/api/v1/push
+      tenant_id: admins
+
+  snippets:
+    pipelineStages:
+      - cri: {}
+      - json:
+          expressions:
+            app:
+            namespace:
+            # app_kubernetes_io_instance_virtual: 'vcluster.loft.sh/labels'
+      - labels:
+          # app_kubernetes_io_instance_virtual: 'app.kubernetes.io/instance="([^"]*)"'
+          app:
+          namespace:
+      - match:
+          selector: '{namespace="tenant-01"}'
+          stages:
+            - tenant:
+                value: "tenant-01"
+      - match:
+          selector: '{namespace="tenant-02"}'
+          stages:
+            - tenant:
+                value: "tenant-02"
+      - match:
+          selector: '{namespace="kunipas"}'
+          stages:
+            - tenant:
+                value: "kunipas"
+      - output:
+          source: message
+    common:
+      - action: replace
+        source_labels:
+          - __meta_kubernetes_pod_node_name
+        target_label: node_name
+      - action: replace
+        source_labels:
+          - __meta_kubernetes_namespace
+        target_label: namespace
+      - action: replace
+        replacement: $1
+        separator: /
+        source_labels:
+          - namespace
+          - app
+        target_label: job
+      - action: replace
+        source_labels:
+          - __meta_kubernetes_pod_name
+        target_label: pod
+      - action: replace
+        source_labels:
+          - __meta_kubernetes_pod_container_name
+        target_label: container
+      - action: replace
+        replacement: /var/log/pods/*$1/*.log
+        separator: /
+        source_labels:
+          - __meta_kubernetes_pod_uid
+          - __meta_kubernetes_pod_container_name
+        target_label: __path__
+      - action: replace
+        replacement: /var/log/pods/*$1/*.log
+        regex: true/(.*)
+        separator: /
+        source_labels:
+          - __meta_kubernetes_pod_annotationpresent_kubernetes_io_config_hash
+          - __meta_kubernetes_pod_annotation_kubernetes_io_config_hash
+          - __meta_kubernetes_pod_container_name
+        target_label: __path__
+      - action: replace
+        regex: ^(.*)-x.*-x-.*
+        source_labels:
+          - __meta_kubernetes_pod_name
+        target_label: pod_vcluster
+      - action: replace
+        regex: ^.*x.*x-(.*) 
+        source_labels:
+          - __meta_kubernetes_pod_name
+        target_label: namespace_tenant_host
+      - action: replace
+        regex: ^(?:.*-x-)(.*)-x-.*
+        source_labels:
+          - __meta_kubernetes_pod_name
+        target_label: namespace_tenant_vcluster
+      - source_labels:
+          - __meta_kubernetes_pod_annotation_vcluster_loft_sh_labels
+        action: replace
+        regex: (?s:app.kubernetes.io.instance="([^"]*).*)
+        target_label: my_fancy_label_vcluster

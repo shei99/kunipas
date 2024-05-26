@@ -23,7 +23,7 @@ releases:
       - ../kubernetes/logging/loki/scalable.yml
 
   - name: promtail
-    namespace: logging
+    namespace: promtail
     chart: grafana/promtail
     version: 6.15.5
     values:
