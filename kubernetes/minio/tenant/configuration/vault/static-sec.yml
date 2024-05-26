@@ -1,0 +1,30 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: kunipas-minio-root-user
+  namespace: s3
+spec:
+  type: kv-v2
+  # mount path
+  mount: kunipas
+  # path of the secret
+  path: minio/admin
+  # dest k8s secret
+  destination:
+    create: true
+    name: vso-kunipas-minio-root-user
+    transformation:
+      excludeRaw: true
+      templates:
+        config.env:
+          text: |-
+            {{- range $key, $value := .Secrets }}
+            {{- printf "export %s=\"%s\"\n" $key $value  -}}
+            {{- end }}
+      excludes:
+        - .*
+  hmacSecretData: true
+  # static secret refresh interval
+  refreshAfter: 30s
+  # Name of the CRD to authenticate to Vault
+  vaultAuthRef: kunipas-minio

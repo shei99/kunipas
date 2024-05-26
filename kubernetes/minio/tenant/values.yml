@@ -1,0 +1,47 @@
+tenant:
+  name: kunipas
+  configuration:
+    name: vso-kunipas-minio-root-user
+    existingSecret: true
+  pools:
+    - servers: 1
+      name: pool-0
+      volumesPerServer: 1
+      size: 5Gi
+  metrics:
+    enabled: true
+    port: 9000
+    protocol: http
+  certificate:
+    requestAutoCert: false
+  buckets: 
+    - name: chunks
+      region: eu-west
+
+ingress:
+  api:
+    enabled: false
+    ingressClassName: "nginx"
+    labels: { }
+    annotations:
+      cert-manager.io/cluster-issuer: prod-dns-cluster-issuer
+    tls:
+      - hosts:
+        - s3.example.com
+        secretName: s3-prod-tls
+    host: s3.example.com
+    path: /
+    pathType: Prefix
+  console:
+    enabled: true
+    ingressClassName: "nginx"
+    labels: { }
+    annotations:
+      cert-manager.io/cluster-issuer: prod-dns-cluster-issuer
+    tls:
+      - hosts:
+        - kunisol.example.com
+        secretName: kunisol-prod-tls
+    host: kunisol.example.com
+    path: /
+    pathType: Prefix

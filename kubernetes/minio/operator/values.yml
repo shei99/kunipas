@@ -1,0 +1,17 @@
+console:
+  readOnly: true
+
+  ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    labels: { }
+    annotations:
+      cert-manager.io/cluster-issuer: prod-dns-cluster-issuer
+    tls:
+      - hosts:
+        - console.example.com
+        secretName: minio-prod-tls
+    host: console.example.com
+    path: /
+    pathType: Prefix
+    number: 9090
