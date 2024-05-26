@@ -1,0 +1,92 @@
+---
+- name: Start Keycloak
+  when: keycloak_enabled is true
+  block:
+    - name: Create Keycloak Directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "{{ keycloak_data_directory }}"
+        - "{{ keycloak_database_data_directory }}"
+
+    - name: Template Keycloak Dockerfil
+      ansible.builtin.template:
+        src: Dockerfile
+        dest: "{{ keycloak_data_directory }}/Dockerfile"
+      register: template_config
+
+    - name: Keycloak Database Docker Container
+      community.docker.docker_container:
+        name: "{{ keycloak_database_container_name }}"
+        hostname: "{{ keycloak_database_container_name }}"
+        image: "{{ keycloak_database_image_name }}:{{ keycloak_database_image_version }}"
+        # restart: "{{ restart }}" # Force restart
+        # recreate: "{{ recreate }}" # Force recreate
+        pull: true
+        restart_policy: unless-stopped
+        volumes:
+          - "{{ keycloak_database_data_directory }}:/var/lib/postgresql/data"
+        env:
+          POSTGRES_USER: "{{ keycloak_database_user }}"
+          POSTGRES_PASSWORD: "{{ keycloak_database_password }}"
+          POSTGRES_DB: "{{ keycloak_database_db }}"
+        networks:
+          - name: "{{ keycloak_database_network }}"
+        ports:
+          - "5432:5432"
+
+    - name: Build Keycloak Docker Container
+      community.docker.docker_image:
+        build:
+          path: "{{ keycloak_data_directory }}"
+        name: "{{ keycloak_custom_image_name }}"
+        tag: "{{ keycloak_image_version }}"
+        source: build
+
+      # ansible.builtin.shell:
+      #   cmd:
+      #     docker build -t "{{ keycloak_custom_image_name }}:{{ keycloak_image_version }}" "{{ keycloak_data_directory }}"
+
+    - name: Keycloak Docker Container
+      community.docker.docker_container:
+        name: "{{ keycloak_container_name }}"
+        image: "{{ keycloak_custom_image_name }}:{{ keycloak_image_version }}"
+        # restart: "{{ restart }}" # Force restart
+        # recreate: "{{ recreate }}" # Force recreate
+        env:
+          KEYCLOAK_ADMIN: "{{ keycloak_admin_username }}"
+          KEYCLOAK_ADMIN_PASSWORD: "{{ keycloak_admin_password }}"
+          KC_DB: "{{ keycloak_database_type }}"
+          KC_DB_URL: "jdbc:postgresql://{{ keycloak_database_container_name }}:5432/{{ keycloak_database_db }}"
+          KC_DB_USERNAME: "{{ keycloak_database_user }}"
+          KC_DB_PASSWORD: "{{ keycloak_database_password }}"
+        networks:
+          - name: proxy
+          - name: "{{ keycloak_database_network }}"
+        restart_policy: unless-stopped
+        labels:
+          traefik.enable: "{{ keycloak_available_externally | string }}"
+          traefik.docker.network: "proxy"
+          traefik.http.routers.keycloak.rule: "Host(`{{ keycloak_hostname }}.{{ ansible_nas_domain }}`)"
+          traefik.http.routers.keycloak.entrypoints: "https"
+          traefik.http.routers.keycloak.tls.certresolver: "cloudflare"
+          traefik.http.routers.keycloak.tls.domains[0].main: "{{ ansible_nas_domain }}"
+          traefik.http.routers.keycloak.tls.domains[0].sans: "*.{{ ansible_nas_domain }}"
+          traefik.http.services.keycloak.loadbalancer.server.port: "8080"
+          # traefik.http.routers.keycloak.middlewares: "keycloak-ipwhitelist@docker"
+          # traefik.http.middlewares.keycloak-ipwhitelist.ipwhitelist.sourcerange: "{{ keycloak_ip_whitelist }}"
+        command: start --optimized --hostname {{ keycloak_hostname }}.{{ ansible_nas_domain }} --hostname-strict false --proxy edge --http-enabled true
+
+- name: Stop Keycloak
+  when: keycloak_enabled is false
+  block:
+    - name: Stop Keycloak
+      community.docker.docker_container:
+        name: "{{ keycloak_container_name }}"
+        state: absent
+
+    - name: Stop Keycloak Database
+      community.docker.docker_container:
+        name: "{{ keycloak_database_container_name }}"
+        state: absent

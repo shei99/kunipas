@@ -1,0 +1,8 @@
+keycloak_available_externally: true
+keycloak_hostname: keycloak
+
+keycloak_admin_username: admin
+keycloak_admin_password: admin1
+keycloak_realm: master
+keycloak_password_salt: unknown
+

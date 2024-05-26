@@ -1,0 +1,44 @@
+---
+keycloak_enabled: false
+keycloak_available_externally: false
+
+# directories
+keycloak_data_directory: "{{ docker_home }}/server/keycloak"
+
+# network
+keycloak_port: "8080"
+keycloak_hostname: "keycloak"
+keycloak_ip_whitelist: "0.0.0.0/0"
+
+# docker
+keycloak_container_name: "keycloak"
+keycloak_image_name: "quay.io/keycloak/keycloak"
+keycloak_image_version: "24.0.1"
+keycloak_custom_image_name: "kunipas-keycloak"
+keycloak_log_level: "INFO"
+
+# environment
+keycloak_admin_username: admin
+keycloak_admin_password: admin1
+
+# specs
+keycloak_memory: 1g
+
+# database docker
+keycloak_database_container_name: "keycloak-db"
+keycloak_database_image_name: "postgres"
+keycloak_database_image_version: "14"
+
+keycloak_database_data_directory: "{{ docker_home }}/keycloak/postgres"
+
+# database network
+keycloak_database_network: "keycloak-db"
+
+# database environment
+keycloak_database_type: postgres
+keycloak_database_user: keycloak
+keycloak_database_password: keycloak
+keycloak_database_db: keycloak
+
+# database specs
+keycloak_database_memory: 1g
