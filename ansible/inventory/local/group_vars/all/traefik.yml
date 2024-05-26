@@ -1,0 +1,3 @@
+traefik_environment_variables:
+  CF_DNS_API_TOKEN: ""
+
