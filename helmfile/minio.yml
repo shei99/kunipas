@@ -1,0 +1,19 @@
+repositories:
+  - name: minio-operator
+    url: https://operator.min.io
+
+releases:
+  - name: minio-operator
+    namespace: minio
+    chart: minio-operator/operator
+    version: 5.0.15
+    values:
+      - ../kubernetes/minio/operator/default-values.yml
+      - ../kubernetes/minio/operator/values.yml
+  - name: minio-tenant-kunipas
+    namespace: s3
+    chart: minio-operator/tenant
+    version: 5.0.15
+    values:
+      - ../kubernetes/minio/tenant/default-values.yml
+      - ../kubernetes/minio/tenant/values.yml

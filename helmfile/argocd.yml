@@ -1,0 +1,12 @@
+repositories:
+  - name: argo
+    url: https://argoproj.github.io/argo-helm
+
+releases:
+  - name: argocd
+    namespace: argocd
+    chart: argo/argo-cd
+    version: 6.7.3
+    values:
+      - ../kubernetes/argocd/default-values.yml
+      - ../kubernetes/argocd/local.yml

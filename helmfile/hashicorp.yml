@@ -1,0 +1,19 @@
+repositories:
+  - name: hashicorp
+    url: https://helm.releases.hashicorp.com
+
+releases:
+  - name: vault
+    namespace: vault
+    chart: hashicorp/vault
+    version: 0.27.0
+    values:
+      - ../kubernetes/hashicorp/vault/default-values.yml
+      - ../kubernetes/hashicorp/vault/values.yml
+  - name: vault-secret-operator
+    namespace: vso
+    chart: hashicorp/vault-secrets-operator
+    version: 0.6.0
+    values:
+      - ../kubernetes/hashicorp/vso/default-values.yml
+      - ../kubernetes/hashicorp/vso/values.yml

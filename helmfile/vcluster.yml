@@ -1,0 +1,19 @@
+repositories:
+  - name: loft-sh
+    url: https://charts.loft.sh
+
+releases: 
+  - name: tenant-01 
+    namespace: tenant-01
+    chart: loft-sh/vcluster
+    version: 0.19.5
+    values:
+      - ../kubernetes/vcluser/default-values.yml
+      - ../kubernetes/vcluser/tenant-01.yml
+  - name: tenant-02 
+    namespace: tenant-02
+    chart: loft-sh/vcluster
+    version: 0.19.5
+    values:
+      - ../kubernetes/vcluser/default-values.yml
+      - ../kubernetes/vcluser/tenant-02.yml

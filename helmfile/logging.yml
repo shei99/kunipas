@@ -1,0 +1,39 @@
+repositories:
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+  # - name: oauth2-proxy
+  #   url: https://oauth2-proxy.github.io/manifests
+
+releases:
+  - name: grafana
+    namespace: grafana
+    chart: grafana/grafana
+    version: 7.3.0
+    values:
+      - ../kubernetes/grafana/default-values.yml
+      - ../kubernetes/grafana/local.yml
+
+  - name: loki
+    namespace: logging
+    chart: grafana/loki
+    version: 5.42.1
+    values:
+      - ../kubernetes/logging/loki/default-values.yml
+      # - ../kubernetes/logging/loki/centralized.yml
+      - ../kubernetes/logging/loki/scalable.yml
+
+  - name: promtail
+    namespace: logging
+    chart: grafana/promtail
+    version: 6.15.5
+    values:
+      - ../kubernetes/logging/promtail/default-values.yml
+      - ../kubernetes/logging/promtail/centralized-daemonset.yml
+
+  # - name: oauth2-proxy
+  #   namespace: kunipas
+  #   chart: oauth2-proxy/oauth2-proxy
+  #   version: 7.1.0
+  #   values:
+  #     - ../kubernetes/logging/oauth2-proxy/default-values.yml
+  #     - ../kubernetes/logging/oauth2-proxy/local.yml
