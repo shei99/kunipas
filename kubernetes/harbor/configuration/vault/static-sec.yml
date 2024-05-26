@@ -1,0 +1,103 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: harbor-core-admin
+  namespace: harbor
+spec:
+  type: kv-v2
+  # mount path
+  mount: kunipas
+  # path of the secret
+  path: harbor/core/admin
+  # dest k8s secret
+  destination:
+    name: vault-harbor-core-admin
+    create: true
+  # static secret refresh interval
+  refreshAfter: 30s
+  # Name of the CRD to authenticate to Vault
+  vaultAuthRef: kunipas-harbor
+
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: harbor-core-encryption
+  namespace: harbor
+spec:
+  type: kv-v2
+  # mount path
+  mount: kunipas
+  # path of the secret
+  path: harbor/core/encryption
+  # dest k8s secret
+  destination:
+    name: vault-harbor-core-encryption
+    create: true
+  # static secret refresh interval
+  refreshAfter: 30s
+  # Name of the CRD to authenticate to Vault
+  vaultAuthRef: kunipas-harbor
+
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: harbor-jobservice
+  namespace: harbor
+spec:
+  type: kv-v2
+  # mount path
+  mount: kunipas
+  # path of the secret
+  path: harbor/jobservice/jobservice
+  # dest k8s secret
+  destination:
+    name: vault-harbor-jobservice
+    create: true
+  # static secret refresh interval
+  refreshAfter: 30s
+  # Name of the CRD to authenticate to Vault
+  vaultAuthRef: kunipas-harbor
+
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: harbor-registry
+  namespace: harbor
+spec:
+  type: kv-v2
+  # mount path
+  mount: kunipas
+  # path of the secret
+  path: harbor/registry/registry-http
+  # dest k8s secret
+  destination:
+    name: vault-harbor-registry
+    create: true
+  # static secret refresh interval
+  refreshAfter: 30s
+  # Name of the CRD to authenticate to Vault
+  vaultAuthRef: kunipas-harbor
+
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: harbor-registry-credentials
+  namespace: harbor
+spec:
+  type: kv-v2
+  # mount path
+  mount: kunipas
+  # path of the secret
+  path: harbor/registry/registry-htpasswd
+  # dest k8s secret
+  destination:
+    name: vault-harbor-registry-credentials
+    create: true
+  # static secret refresh interval
+  refreshAfter: 30s
+  # Name of the CRD to authenticate to Vault
+  vaultAuthRef: kunipas-harbor

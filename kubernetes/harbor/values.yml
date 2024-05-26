@@ -1,0 +1,55 @@
+expose:
+  tls:
+    certSource: secret
+    secret:
+      secretName: "harbor-prod-tls"
+  ingress:
+    hosts:
+      core: harbor.example.com
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: prod-dns-cluster-issuer
+
+externalURL: https://harbor.example.com
+
+ipFamily:
+  ipv6:
+    enabled: false
+
+existingSecretAdminPassword: vault-harbor-core-admin
+existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
+
+existingSecretSecretKey: "vault-harbor-core-encryption"
+
+portal:
+  serviceAccountName: "harbor-portal"
+
+core:
+  serviceAccountName: "harbor-core"
+
+jobservice:
+  serviceAccountName: "harbor-jobservice"
+  existingSecret: "vault-harbor-jobservice"
+  existingSecretKey: JOBSERVICE_SECRET
+  
+registry:
+  serviceAccountName: "harbor-registry"
+  existingSecret: "vault-harbor-registry"
+  existingSecretKey: REGISTRY_HTTP_SECRET
+  credentials:
+    existingSecret: "vault-harbor-registry-credentials"
+
+trivy:
+  serviceAccountName: "harbor-trivy"
+
+database:
+  internal:
+    serviceAccountName: "harbor-database"
+  password: "changeit"
+
+redis:
+  internal:
+    serviceAccountName: "harbor-redis"
+
+metrics:
+  enabled: false
