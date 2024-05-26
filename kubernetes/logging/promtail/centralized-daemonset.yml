@@ -26,7 +26,17 @@ config:
             - tenant:
                 value: "tenant-02"
       - match:
-          selector: '{namespace="kunipas"}'
+          selector: '{namespace=~"argocd|cert-manager|grafana|harbor|logging|monitoring|minio|s3|vault|vso"}'
+          stages:
+            - tenant:
+                value: "kunipas"
+      - match:
+          selector: '{namespace=~"tenant-(.*)",app="vcluster"}'
+          stages:
+            - tenant:
+                value: "kunipas"
+      - match:
+          selector: '{namespace=~"tenant-(.*)",app="prometheus"}'
           stages:
             - tenant:
                 value: "kunipas"
