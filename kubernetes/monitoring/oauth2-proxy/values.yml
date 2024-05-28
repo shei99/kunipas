@@ -1,0 +1,47 @@
+config:
+  cookieSecret: "cookie_secret"
+  # cookieName: "_oauth2_proxy"    # Name of the cookie that oauth2-proxy creates, if not set defaults to "_oauth2_proxy"
+  configFile: |-
+    email_domains = [ "*" ]
+
+alphaConfig:
+  enabled: true
+  configData:
+    providers:
+    - id: oidc-thanos
+      provider: oidc
+      clientID: oauth2-proxy-thanos
+      clientSecret: <client_secret>
+      loginURL: https://keycloak.local.shei.rocks/realms/master/protocol/openid-connect/auth
+      redeemURL: https://keycloak.local.shei.rocks/realms/master/protocol/openid-connect/token
+      profileURL: https://keycloak.local.shei.rocks/realms/master/protocol/openid-connect/userinfo
+      validateURL: https://keycloak.local.shei.rocks/realms/master/protocol/openid-connect/userinfo
+      oidcConfig:
+        emailClaim: email
+        audienceClaims: 
+          - aud
+        groupsClaim: groups
+        userIDClaim: email
+        skipDiscovery: true
+        issuerURL: https://keycloak.local.shei.rocks/realms/master
+        jwksURL: https://keycloak.local.shei.rocks/realms/master/protocol/openid-connect/certs
+        # insecureAllowUnverifiedEmail: true
+      scope: "openid email profile groups"
+    upstreamConfig:
+      upstreams:
+        - id: thanos
+          uri: http://thanos-query-frontend.monitoring.svc.cluster.local:9090
+          path: /
+    injectRequestHeaders:
+      - name: THANOS-TENANT
+        values:
+          - claim: groups
+
+extraArgs:
+  skip-jwt-bearer-tokens: true
+  skip-provider-button: true       # We only have one provider configured (Keycloak)
+  silence-ping-logging: true       # Keeps our logs clean
+  auth-logging: true               # Enable / Disable auth logs
+  request-logging: true            # Enable / Disable request logs
+  standard-logging: true           # Enable / Disable the standart logs
+
