@@ -1,0 +1,58 @@
+global:
+  domain: argocd.example.com
+
+configs:
+  cm:
+    url: http://argocd.example.com
+    oidc.config: |
+      name: Keycloak
+      issuer: https://keycloak.example.com/realms/master
+      clientID: argocd
+      clientSecret: $oidc.keycloak.clientSecret
+      requestedScopes: ["openid", "profile", "email"]
+  params:
+    server.insecure: true
+
+  rbac:
+    policy.csv: |
+      g, Kunipas, role:admin
+      p, role:none, *, *, */*, deny
+    policy.default: 'role:none'
+
+dex:
+  enabled: false
+
+controller:
+  name: application-controller
+  replicas: 1
+
+server:
+  replicas: 2
+  certificate:
+    enabled: false
+    secretName: argocd-server-tls
+    domain: argocd.example.com
+    duration: "2160h"
+    renewBefore: "360h"
+    issuer:
+      group: "cert-manager.io"
+      kind: "ClusterIssuer"
+      name: "prod-issuer"
+    privateKey:
+      rotationPolicy: Always
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: prod-dns-cluster-issuer
+    labels: { }
+    ingressClassName: "nginx"
+    tls:
+      - secretName: argocd-prod-tls
+        hosts:
+          - argo.example.com
+
+repoServer:
+  replicas: 2
+
+applicationSet:
+  enabled: false
