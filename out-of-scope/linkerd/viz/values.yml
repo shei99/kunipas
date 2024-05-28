@@ -1,0 +1,3 @@
+prometheus:
+  # -- toggle field to enable or disable prometheus
+  enabled: true
