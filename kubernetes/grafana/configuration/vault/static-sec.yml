@@ -1,0 +1,41 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: grafana-admin
+  namespace: grafana
+spec:
+  type: kv-v2
+  # mount path
+  mount: kunipas
+  # path of the secret
+  path: grafana/admin
+  # dest k8s secret
+  destination:
+    name: grafana-admin
+    create: true
+  # static secret refresh interval
+  refreshAfter: 30s
+  # Name of the CRD to authenticate to Vault
+  vaultAuthRef: kunipas-grafana
+
+---
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: grafana-oidc
+  namespace: grafana
+spec:
+  type: kv-v2
+  # mount path
+  mount: kunipas
+  # path of the secret
+  path: grafana/oidc
+  # dest k8s secret
+  destination:
+    name: grafana-oidc
+    create: true
+  # static secret refresh interval
+  refreshAfter: 30s
+  # Name of the CRD to authenticate to Vault
+  vaultAuthRef: kunipas-grafana
+

@@ -1,0 +1,13 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: kunipas-grafana
+  namespace: grafana
+spec:
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: kunipas-grafana
+    serviceAccount: vso-kunipas-grafana
+    audiences:
+      - vault
