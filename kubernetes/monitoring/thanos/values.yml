@@ -1,0 +1,48 @@
+receive:
+  enabled: true
+  replicaCount: 2
+  extraFlags:
+    - --receive.hashrings-algorithm=ketama
+    - --objstore.config-file=/files/conf/objstore.yml
+  config:
+    - endpoints:
+      - "thanos-receive-0.thanos-receive-headless.monitoring.svc.cluster.local:10901"
+      - "thanos-receive-1.thanos-receive-headless.monitoring.svc.cluster.local:10901"
+  logLevel: info
+  resourcesPreset: "small"
+  service:
+    additionalHeadless: true
+  extraVolumeMounts:
+    - mountPath: /files/conf/objstore.yml
+      subPath: objstore.yml      
+      name: thanos-bucket
+      readOnly: true
+  extraVolumes: 
+    - name: thanos-bucket
+      secret:
+        secretName: vso-kunipas-thanos-minio
+query:
+  enabled: true
+  resourcesPreset: "small"
+  extraFlags:
+    - --query.enforce-tenancy
+
+queryFrontend:
+  enabled: true
+ 
+storegateway:
+  enabled: false
+  extraFlags:
+    - --objstore.config-file=/files/conf/objstore.yml
+  extraVolumeMounts:
+    - mountPath: /files/conf/objstore.yml
+      subPath: objstore.yml      
+      name: thanos-bucket
+      readOnly: true
+  extraVolumes: 
+    - name: thanos-bucket
+      secret:
+        secretName: vso-kunipas-thanos-minio
+ 
+metrics:
+  enabled: true

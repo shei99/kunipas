@@ -1,0 +1,40 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultStaticSecret
+metadata:
+  name: kunipas-thanos-minio
+  namespace: monitoring
+spec:
+  type: kv-v2
+  # mount path
+  mount: kunipas
+  # path of the secret
+  path: minio/admin
+  # dest k8s secret
+  destination:
+    create: true
+    name: vso-kunipas-thanos-minio
+    transformation:
+      excludeRaw: true
+      templates:
+        objstore.yml:
+          text: |-
+            {{- printf "type: S3\n" -}}
+            {{- printf "config:\n" -}}
+            {{- printf "  bucket: thanos\n" -}}
+            {{- printf "  endpoint: minio.s3.svc.cluster.local\n" -}}
+            {{- printf "  insecure: true\n" -}}
+            {{- range $key, $value := .Secrets }}
+            {{- if eq $key "MINIO_ROOT_USER"  }}
+            {{- printf "  access_key: %s\n" $value  -}}
+            {{- end }}
+            {{- if eq $key "MINIO_ROOT_PASSWORD" }}
+            {{- printf "  secret_key: %s\n" $value  -}}
+            {{- end }}
+            {{- end }}
+      excludes:
+        - .*
+  hmacSecretData: true
+  # static secret refresh interval
+  refreshAfter: 30s
+  # Name of the CRD to authenticate to Vault
+  vaultAuthRef: kunipas-thanos
